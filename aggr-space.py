@@ -3,22 +3,9 @@
 #                                                            #
 # $ID:$                                                      #
 #                                                            #
-# hello_ontapi.py                                            #
-#                                                            #
-# "Hello_world" program which prints the ONTAP version       #
-# number of the destination filer                            #
-#                                                            #
-# Copyright 2011 Network Appliance, Inc. All rights          #
-# reserved. Specifications subject to change without notice. #
-#                                                            #
-# This SDK sample code is provided AS IS, with no support or #
-# warranties of any kind, including but not limited to       #
-# warranties of merchantability or fitness of any kind,      #
-# expressed or implied.  This code is subject to the license #
-# agreement that accompanies the SDK.                        #
-#                                                            #
-# tab size = 8                                               #
-#                                                            #
+# aggr-space.pw
+# based off hello #
+# gets space used in each aggr
 #============================================================#
 
 import sys
@@ -48,6 +35,13 @@ s.set_admin_user(user, password)
 s.set_transport_type("HTTP")
 output = s.invoke("aggr-space-list-info")
 
+def sizeof_fmt(num):
+    for x in ['bytes','KB','MB','GB']:
+        if num < 1024.0 and num > -1024.0:
+            return "%3.1f%s" % (num, x)
+        num /= 1024.0
+    return "%3.1f%s" % (num, 'TB')
+
 if(output.results_errno() != 0):
    r = output.results_reason()
    print("Failed: \n" + str(r))
@@ -59,6 +53,6 @@ else :
    for aggr in result:
      aggr_name = aggr.child_get_string("aggregate-name")
      aggr_free = aggr.child_get_int("size-free")
-     print '%s has %d space free' % (aggr_name, aggr_free)
+     print '%s has %s free' % (aggr_name, sizeof_fmt(aggr_free))
   
 
