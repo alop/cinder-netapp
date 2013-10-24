@@ -32,15 +32,20 @@ filer = sys.argv[1]
 user = sys.argv[2]
 password = sys.argv[3]
 
+aggr_name = "cinder_aggr"
+vol_name = "cinder"
+
 s = NaServer(filer, 1, 1)
 s.set_server_type("Filer")
 s.set_admin_user(user, password)
 s.set_transport_type("HTTP")
+
+# Get the sysid of "this" controller
 system = s.invoke("system-get-info")
 sysinfo = system.child_get("system-info")
 sysid = sysinfo.child_get_string("system-id")
 
-print sysid
+# get the disks that this controller owns
 output = s.invoke("disk-sanown-list-info")
 
 if(output.results_errno() != 0):
@@ -58,12 +63,12 @@ else :
      if owner == sysid:
         disk_list.append(disk_name)
 
-print disk_list
 aggr_disks = []
 
+# Make sure the disks aren't already assigned to an aggr
 for i in disk_list:
-  print "Checking details for %s" % i
-  time.sleep(0.3)
+  print "Checking details for disk %s" % i
+  time.sleep(0.4)
   diskinfo = s.invoke("disk-list-info", "disk", i)
   details = diskinfo.child_get("disk-details")
   check_list = details.children_get()
@@ -74,13 +79,31 @@ for i in disk_list:
     if aggr is None:
       aggr_disks.append(disk_name)
 
-print "Aggr list", aggr_disks
 #Subtract some spares
 aggr_disk_list = len(aggr_disks) - 2
-output = s.invoke("aggr-create", "aggregate", "newaggr", "disk-count", aggr_disk_list)
+
+# Create an aggr using n - 2 available disks
+output = s.invoke("aggr-create", "aggregate", aggr_name, "disk-count", aggr_disk_list)
 if(output.results_errno() != 0):
   r = output.results_reason()
   print("Failed: \n" + str(r))
 else:
   print "Success"
 
+# Get maximum space
+vol_size = ""
+
+output = s.invoke("aggr-space-info", "aggregate", aggr_name)
+if(output.results_errno() != 0):
+  print("Failed: " + str(output.results_reason()))
+else:
+  info = output.child_get("aggr-space-info")
+  vol_size = info.child_get_int("size-nominal")
+
+# Create the cinder volume utilizing maximum space
+output = s.invoke("volume-create", "containing-aggr-name", aggr_name, "size", vol_size)
+
+if(output.results_errno() != 0):
+  print("Failed: " + str(output.results_reason()))
+else:
+  print "Success"
