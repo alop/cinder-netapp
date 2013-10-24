@@ -93,7 +93,7 @@ else:
 # Get maximum space
 vol_size = ""
 
-output = s.invoke("aggr-space-info", "aggregate", aggr_name)
+output = s.invoke("aggr-space-list-info", "aggregate", aggr_name)
 if(output.results_errno() != 0):
   print("Failed: " + str(output.results_reason()))
 else:
