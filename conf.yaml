@@ -1,0 +1,6 @@
+---
+aggregate:
+  name: cinder_aggr
+  spares: 2
+volume:
+  name: cinder
